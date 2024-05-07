@@ -9,8 +9,9 @@ extern uint32_t _edata, _sdata, _etext, _ebss, _sbss;
 void reset_handler();
 void dummy_handler();
 void nmi_handler();
+void usb_handler();
 
-uint32_t isr_vector[39] __attribute__((section(".isr_vector"))) = 
+uint32_t isr_vector[48] __attribute__((section(".isr_vector"))) = 
 {
 	// First entry is not actually an interrupt handler, but the 
 	// location of the initial stack pointer
@@ -35,7 +36,7 @@ uint32_t isr_vector[39] __attribute__((section(".isr_vector"))) =
 	0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0
+	0, 0, 0, 0, (uint32_t)&usb_handler
 };
 
 

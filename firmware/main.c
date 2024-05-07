@@ -48,6 +48,14 @@ void enable_external_clock()
     // Wait for PLL ready
     while(!(RCC->CR & RCC_CR_PLLRDY)) {}
 
+    // Set AHB prescaler to divide by 2, so AHB runs at 24MHz
+    RCC->CFGR &= ~RCC_CFGR_HPRE;
+    RCC->CFGR |= RCC_CFGR_HPRE_DIV2;
+
+    // Set system clock to use PLL (as fast as it can go infact)
+    RCC->CFGR &= ~RCC_CFGR_SW;
+    RCC->CFGR |= RCC_CFGR_SW_PLL;
+
     // Set USB to use the PLL
     RCC->CFGR3 |= RCC_CFGR3_USBSW_PLLCLK;
 
@@ -57,8 +65,39 @@ void enable_external_clock()
 
 void enable_usb()
 {
+    // Enable USB peripheral
     RCC->APB1ENR |= RCC_APB1ENR_USBEN;
+    // And its GPIOA
+    RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
 
+    // Enable USB interrupt
+    //NVIC_SetPriority(USB_IRQn, 8);
+    //NVIC_EnableIRQ(USB_IRQn);
+
+    // Enable USB macrocell (exit power down mode)
+    USB->CNTR &= ~USB_CNTR_PDWN;
+
+    // Wait a few microseconds for clock stability
+    for(uint32_t i = 0; i < 10000; i++)
+    {
+        
+    }
+
+    // Enable reset and correct transfer interrupts
+    USB->CNTR |= USB_CNTR_RESETM | USB_CNTR_CTRM;
+    // Enable pull up on D+ to signal that we are there
+    USB->BCDR |= USB_BCDR_DPPU;
+
+    // Stop resetting the peripheral so USB operation may begin
+    // (this flag is set by default)
+    USB->CNTR &= ~USB_CNTR_FRES;
+    
+
+}
+
+void usb_handler()
+{
+    return;
 }
 
 void set_led(bool on)
@@ -73,6 +112,7 @@ void set_led(bool on)
 int main()
 {
     enable_external_clock(); 
+    enable_usb();
 
     // Enable GPIOC peripheral
     RCC->AHBENR |= RCC_AHBENR_GPIOBEN_Msk;
@@ -90,12 +130,12 @@ int main()
     {
         set_led(true);
         // Busy loop
-        for(uint32_t i = 0; i < 100000; i++)
+        for(uint32_t i = 0; i < 1000000; i++)
         {
             
         }
         set_led(false);
-        for(uint32_t i = 0; i < 400000; i++)
+        for(uint32_t i = 0; i < 1000000; i++)
         {
             
         }
