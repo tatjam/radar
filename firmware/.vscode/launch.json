@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "name": "Debug (OpenOCD)",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "runToEntryPoint": "main",
+            "executable": "./build/flash.elf",
+            "device": "STM32F4072CBT6",
+            "configFiles": [
+                "interface/stlink-dap.cfg",
+                "target/stm32f0x.cfg"
+            ], 
+            "showDevDebugOutput": "none",
+        }
+    ]
+}
