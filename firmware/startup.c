@@ -9,7 +9,6 @@ extern uint32_t _edata, _sdata, _etext, _ebss, _sbss;
 void reset_handler();
 void dummy_handler();
 void nmi_handler();
-void rcc_crs_handler();
 
 uint32_t isr_vector[39] __attribute__((section(".isr_vector"))) = 
 {
@@ -31,8 +30,7 @@ uint32_t isr_vector[39] __attribute__((section(".isr_vector"))) =
 	// SysTick
 	(uint32_t)&dummy_handler,
 	// Interrupt 0 starts here (substract 16 to get position)
-	0, 0, 0, 0, 
-	(uint32_t)&rcc_crs_handler, 
+	0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 

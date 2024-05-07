@@ -2,20 +2,27 @@
 #include "stm32f072xb.h"
 #include <stdbool.h>
 
-volatile bool external_clock_ready;
-
-void rcc_crs_handler()
+void enable_debug_mco()
 {
-    // Check that the interrupt was called because HSE is ready
-    if((RCC->CIR & RCC_CIR_HSERDYF) != 0)
-    {
-        // Clear interrupt flag, as we have handled it
-        RCC->CIR |= RCC_CIR_HSERDYC;
-        // Set to 01 which means use HSE
-        RCC->CFGR |= RCC_CFGR_SW_0;
-        // Report to main so it exits its busy loop
-        external_clock_ready = true;
-    }
+    // PA8 is the MCO on this micro, enable it
+    RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+
+    // Dummy reads, as explained in silicon errata
+    volatile uint32_t dummy;
+    dummy = RCC->AHBENR;
+    dummy = RCC->AHBENR;
+
+    // (First of all clear bits, just in case!)
+    GPIOA->MODER &= ~GPIO_MODER_MODER8;
+    // Set PA8 to be alternate function
+    // By default alternate function is MCO so this is enough
+    GPIOA->MODER |= GPIO_MODER_MODER8_1;
+
+    // Set MCO to output the PLL clock (so we can see it on the oscilloscope)
+    // It's divided by 32 (16 * 2 default PLL post-scale) so we should see a 1.5MHz signal
+    RCC->CFGR |= RCC_CFGR_MCOPRE_DIV16;
+    RCC->CFGR |= RCC_CFGR_MCO_PLL;
+
 }
 
 void enable_external_clock()
@@ -24,24 +31,48 @@ void enable_external_clock()
     NVIC_EnableIRQ(RCC_CRS_IRQn);
     NVIC_SetPriority(RCC_CRS_IRQn, 0);
 
-    // We want to be interrupted if HSE (high speed external clock) is ready
-    RCC->CIR |= RCC_CIR_HSERDYIE;
     // Enable clock security (NMI on clock failure)
-    // Enable bypass HSE oscillator with external clock
     // Enable HSE clock
     RCC->CR |= RCC_CR_CSSON | RCC_CR_HSEON;
-    // Once HSE is ready, the interrupt will be dispatched
-    
+    // Wait for HSE ready
+    while(!(RCC->CR & RCC_CR_HSERDY)) {}
+
+    // Configure PLL
+    // Use HSE (8Mhz) divided by PREDIV (no division by default)
+    RCC->CFGR |= RCC_CFGR_PLLSRC_HSE_PREDIV;
+    // Multiplied by 6 it's 48MHz (USB)
+    RCC->CFGR |= RCC_CFGR_PLLMUL6;
+    // Enable the PLL
+    RCC->CR |= RCC_CR_PLLON;
+
+    // Wait for PLL ready
+    while(!(RCC->CR & RCC_CR_PLLRDY)) {}
+
+    // Set USB to use the PLL
+    RCC->CFGR3 |= RCC_CFGR3_USBSW_PLLCLK;
+
+    enable_debug_mco();
+
+}
+
+void enable_usb()
+{
+    RCC->APB1ENR |= RCC_APB1ENR_USBEN;
+
+}
+
+void set_led(bool on)
+{
+    if(on)
+        GPIOB->ODR |= GPIO_ODR_2;
+    else
+        GPIOB->ODR &= ~GPIO_ODR_2;
 }
 
 
 int main()
 {
-    external_clock_ready = false;
     enable_external_clock(); 
-    //__enable_irq();
-    // Wait for clock to come up...
-    while(!external_clock_ready) {}
 
     // Enable GPIOC peripheral
     RCC->AHBENR |= RCC_AHBENR_GPIOBEN_Msk;
@@ -57,9 +88,14 @@ int main()
 
     while(true)
     {
-        GPIOB->ODR ^= GPIO_ODR_2;
+        set_led(true);
         // Busy loop
         for(uint32_t i = 0; i < 100000; i++)
+        {
+            
+        }
+        set_led(false);
+        for(uint32_t i = 0; i < 400000; i++)
         {
             
         }
