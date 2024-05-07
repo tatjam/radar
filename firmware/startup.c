@@ -7,17 +7,40 @@
 extern uint32_t _edata, _sdata, _etext, _ebss, _sbss;
 
 void reset_handler();
+void dummy_handler();
 void nmi_handler();
+void rcc_crs_handler();
 
-uint32_t isr_vector[32] __attribute__((section(".isr_vector"))) = 
+uint32_t isr_vector[39] __attribute__((section(".isr_vector"))) = 
 {
 	// First entry is not actually an interrupt handler, but the 
 	// location of the initial stack pointer
 	SRAM_END,
 	// Second entry is the reset handler, (and also address for initial PC)
 	(uint32_t)&reset_handler,
-	(uint32_t)&nmi_handler
+	// Third entry is the non-maskable interrupt handler
+	(uint32_t)&nmi_handler,
+	// Hard fault
+	(uint32_t)&dummy_handler, 
+	// Padding (reserved)
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
+	// SVCall
+	(uint32_t)&dummy_handler, 
+	// PendSV
+	(uint32_t)&dummy_handler, 
+	// SysTick
+	(uint32_t)&dummy_handler,
+	// Interrupt 0 starts here (substract 16 to get position)
+	0, 0, 0, 0, 
+	(uint32_t)&rcc_crs_handler, 
+	0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0
 };
+
+
 
 extern int main();
 
@@ -47,6 +70,12 @@ void reset_handler()
 }
 	
 void nmi_handler()
+{
+	// TODO: Dispatch error handlers
+	return;
+}
+
+void dummy_handler()
 {
 	return;
 }
