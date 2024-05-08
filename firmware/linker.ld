@@ -3,6 +3,7 @@ MEMORY
 {
 	FLASH(rx)			: ORIGIN = 0x08000000, LENGTH = 128k
 	SRAM(rwx)			: ORIGIN = 0x20000000, LENGTH = 16k
+	USBRAM(rw)			: ORIGIN = 0x40006000, LENGTH = 1K
 }
 SECTIONS
 {
@@ -42,5 +43,11 @@ SECTIONS
 		. = ALIGN(4);
 		_ebss = .;
 	} > SRAM
+
+	.usbbuffer (NOLOAD):
+	{
+		*(.usbbuf)
+		*(.usbbuf*)
+	} > USBRAM
 
 }

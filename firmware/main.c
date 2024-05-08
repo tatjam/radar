@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "stm32f072xb.h"
 #include <stdbool.h>
+#include "usb.h"
 
 void enable_debug_mco()
 {
@@ -60,45 +61,8 @@ void enable_external_clock()
     RCC->CFGR3 |= RCC_CFGR3_USBSW_PLLCLK;
 
     enable_debug_mco();
-
 }
 
-void enable_usb()
-{
-    // Enable USB peripheral
-    RCC->APB1ENR |= RCC_APB1ENR_USBEN;
-    // And its GPIOA
-    RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
-
-    // Enable USB interrupt
-    //NVIC_SetPriority(USB_IRQn, 8);
-    //NVIC_EnableIRQ(USB_IRQn);
-
-    // Enable USB macrocell (exit power down mode)
-    USB->CNTR &= ~USB_CNTR_PDWN;
-
-    // Wait a few microseconds for clock stability
-    for(uint32_t i = 0; i < 10000; i++)
-    {
-        
-    }
-
-    // Enable reset and correct transfer interrupts
-    USB->CNTR |= USB_CNTR_RESETM | USB_CNTR_CTRM;
-    // Enable pull up on D+ to signal that we are there
-    USB->BCDR |= USB_BCDR_DPPU;
-
-    // Stop resetting the peripheral so USB operation may begin
-    // (this flag is set by default)
-    USB->CNTR &= ~USB_CNTR_FRES;
-    
-
-}
-
-void usb_handler()
-{
-    return;
-}
 
 void set_led(bool on)
 {
@@ -138,7 +102,7 @@ int main()
         for(uint32_t i = 0; i < 1000000; i++)
         {
             
-        }
+        } 
 
     }
 

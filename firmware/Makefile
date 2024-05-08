@@ -1,4 +1,4 @@
-files := startup.c main.c utils.c
+files := startup.c main.c utils.c usb.c
 
 flash.elf: build/ $(files)
 	bear -- arm-none-eabi-gcc $(files) -I../../headers/ -g -T linker.ld -o build/flash.elf -mcpu=cortex-m0plus -mthumb -nostdlib
