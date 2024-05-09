@@ -1,4 +1,5 @@
 #include "usb.h"
+#include "stdbool.h"
 #include "cmsis_gcc.h"
 #include "stm32f072xb.h"
 
@@ -19,22 +20,46 @@ __USB_MEM
 volatile static char EP0_buffer_tx[64] = {0};
 
 // Endpoint 1 is used for controlling the device, and we can do with 64 bytes too
-__ALIGNED(2);
+__ALIGNED(2)
 __USB_MEM
 volatile static char EP1_buffer_rx[64] = {0};
-__ALIGNED(2);
+__ALIGNED(2)
 __USB_MEM
 volatile static char EP1_buffer_tx[64] = {0};
 
 // Finally, endpoint 2 is used for bulk data transfer. We can do with 64 bytes of RX and 
 // 512 bytes for TX 
-__ALIGNED(2);
+__ALIGNED(2)
 __USB_MEM 
 volatile static char EP2_buffer_rx[64] = {0};
-__ALIGNED(2);
+__ALIGNED(2)
 __USB_MEM 
 volatile static char EP2_buffer_tx[512] = {0};
 
+static const USBDescriptorDevice usb_dev_descriptor = {
+    .Length = 18,
+    .Type = 0x01,
+    .USBVersion = 0x0200,
+    .DeviceClass = 0x00,
+    .DeviceSubClass = 0x00,
+    .DeviceProtocol = 0x00,
+    .MaxPacketSize = 64,
+    .VendorID = 0x0483,
+    .ProductID = 0x5740,
+    .DeviceVersion = 0x0001,
+    .strManufacturer = 0,
+    .strProduct = 0,
+    .strSerialNumber = 0,
+    .Configurations = 1
+};
+
+// If non-zero, it was just set
+static uint16_t just_set_address = 0;
+
+const USBDescriptorDevice* usb_get_descriptor()
+{
+    return &usb_dev_descriptor;
+}
 
 // We have used a total of 896 bytes, we have enough space for future expansion...
 
@@ -159,6 +184,12 @@ void usb_handle_ep0()
 
     if((USB->EP0R & USB_EP_CTR_TX) != 0)
     {
+        if(just_set_address)
+        {
+            USB->DADDR &= ~USB_DADDR_ADD;
+            USB->DADDR |= just_set_address & USB_DADDR_ADD;
+            just_set_address = 0;
+        }
         // Sent a message, clear the TX flag (this will actually do a 0 write to clear)
         usb_set_endpoint(&USB->EP0R, 0, USB_EP_CTR_TX);
     }
@@ -172,9 +203,34 @@ void usb_handle_ep0_setup(USBSetupPacket* pkt)
         switch(pkt->req)
         {
             case 0x06: // Get descriptor request
-            __BKPT(1);
+                usb_copy_memory((uint16_t*)usb_get_descriptor(), 
+                (uint16_t*)(&EP0_buffer_tx), sizeof(USBDescriptorDevice));
+                BTable[0].COUNT_TX = sizeof(USBDescriptorDevice);
+                usb_set_endpoint(&USB->EP0R, USB_EP_TX_VALID, USB_EP_TX_VALID);
+            break;
+            case 0x05: // Set address request
+                // We don't set the address just yet, instead do it on next 
+                just_set_address = pkt->value;
+                // We do send an empty reply
+                BTable[0].COUNT_TX = 0;
+                usb_set_endpoint(&USB->EP0R, USB_EP_TX_VALID, USB_EP_TX_VALID);
             break;
         }
 
+    }
+}
+
+// This guarantees 16-bit by 16-bit copy
+void usb_copy_memory(volatile uint16_t* from, volatile uint16_t* to, uint16_t len)
+{
+    for(int i = 0; i < len / 2; i++)
+    {
+        to[i] = from[i];
+    }
+
+    if(len % 2 == 1)
+    {
+        // Copy a single byte 
+        ((char*)to)[len - 1] = ((char*)from)[len - 1];
     }
 }
