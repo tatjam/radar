@@ -1,6 +1,8 @@
 #pragma once
 #include <stdint.h>
 #include "cmsis_gcc.h"
+#include "stm32f072xb.h"
+#include "usb_config.h"
 
 #define USB_RAM_BEGIN 0x40006000
 #define MEM_TO_USB(x) (((int)x - USB_RAM_BEGIN))
@@ -15,7 +17,8 @@ typedef struct
 } USB_BTABLE_ENTRY;
 
 
-typedef struct {
+typedef struct 
+{
     uint8_t req_type;
     uint8_t req;
     // 
@@ -31,7 +34,8 @@ typedef struct {
     uint16_t len;
 } USBSetupPacket;
 
-typedef struct {
+typedef struct 
+{
     uint8_t Length;
     uint8_t Type;
     uint16_t USBVersion;
@@ -48,6 +52,17 @@ typedef struct {
     uint8_t Configurations;
 } USBDescriptorDevice;
 
+typedef struct 
+{
+    uint16_t len;
+    uint16_t sent;
+    uint8_t* buffer;
+} USBTransfer;
+
+typedef struct {
+    USBSetupPacket setup;
+    USBTransfer transfer;
+} USBControlState;
 
 
 void enable_usb();
@@ -60,5 +75,8 @@ void usb_handle_ep0_setup(USBSetupPacket* pkt);
 
 // len is in number of BYTES, not uint16_t!
 void usb_copy_memory(volatile uint16_t* from, volatile uint16_t* to, uint16_t len);
+
+void usb_prepare_transfer(USBTransfer* trans, volatile uint16_t* ep, volatile uint8_t* buffer, 
+    uint16_t buffer_size, volatile uint16_t* txbuffer_count);
 
 const USBDescriptorDevice* usb_get_descriptor();
