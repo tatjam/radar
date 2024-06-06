@@ -95,7 +95,7 @@ extern "C" {
 #endif
 
 //------------- CLASS -------------//
-#define CFG_TUD_CDC              1
+#define CFG_TUD_CDC              2   // Raw data endpoint, and control endpoint
 #define CFG_TUD_MSC              0
 #define CFG_TUD_HID              0
 #define CFG_TUD_MIDI             0
@@ -112,7 +112,7 @@ extern "C" {
 #define CFG_TUD_MSC_EP_BUFSIZE   512
 
 #ifdef __cplusplus
- }
+}
 #endif
 
 #endif /* _TUSB_CONFIG_H_ */

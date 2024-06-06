@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "class/cdc/cdc_device.h"
 #include "stm32f0xx.h"
 #include <stdbool.h>
 #include <tusb.h>
@@ -123,6 +124,18 @@ int main()
 	while(true)
 	{
 		tud_task();
+
+		if(tud_cdc_connected())
+		{
+			uint32_t cnt = 0;
+			if(tud_cdc_available())
+			{
+				uint8_t buf[64];
+				cnt = tud_cdc_read(buf, sizeof(buf));
+				tud_cdc_write(buf, 1);
+				tud_cdc_write_flush();
+			}
+		}
 	}
 
 }
