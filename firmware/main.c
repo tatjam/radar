@@ -138,8 +138,8 @@ int main()
 	// Launch systick
 	// TODO: This should be set to 24000 by the manual (AHB prescaler is 1/2), but
 	// TODO: for wathever reason we need 12000. Maybe clocks are wrong?
-	//SysTick->LOAD = 12000 - 1;
-	//SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
+	SysTick->LOAD = 12000 - 1;
+	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 
 	while(true)
 	{
