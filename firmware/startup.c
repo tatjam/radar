@@ -10,6 +10,7 @@ void reset_handler();
 void dummy_handler();
 void nmi_handler();
 void usb_handler();
+void systick_handler();
 
 uint32_t isr_vector[48] __attribute__((section(".isr_vector"))) = 
 {
@@ -29,7 +30,7 @@ uint32_t isr_vector[48] __attribute__((section(".isr_vector"))) =
 	// PendSV
 	(uint32_t)&dummy_handler, 
 	// SysTick
-	(uint32_t)&dummy_handler,
+	(uint32_t)&systick_handler,
 	// Interrupt 0 starts here (substract 16 to get position)
 	0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 

@@ -2,4 +2,5 @@
 firmware/build/
 firmware/compile_commands.json
 firmware/.cache/
+firmware/.idea/
 

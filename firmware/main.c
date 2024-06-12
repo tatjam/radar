@@ -4,7 +4,9 @@
 #include <stdbool.h>
 #include <tusb.h>
 
-void enable_debug_mco()
+int64_t abs_time;
+
+static void enable_debug_mco()
 {
 	// PA8 is the MCO on this micro, enable it
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
@@ -27,7 +29,7 @@ void enable_debug_mco()
 
 }
 
-void enable_external_clock()
+static void enable_external_clock()
 {
 	// Enable and set priority of RCC_CRS interrupt
 	NVIC_EnableIRQ(RCC_CRS_IRQn);
@@ -64,7 +66,7 @@ void enable_external_clock()
 	enable_debug_mco();
 }
 
-void enable_usb()
+static void enable_usb()
 {
 	// Enable USB peripheral
 	RCC->APB1ENR |= RCC_APB1ENR_USBEN;
@@ -94,18 +96,23 @@ void enable_usb()
 	USB->CNTR &= ~USB_CNTR_FRES;
 }
 
-
-void set_led(bool on)
+static void enable_adc()
 {
-	if(on)
-		GPIOB->ODR |= GPIO_ODR_2;
-	else
-		GPIOB->ODR &= ~GPIO_ODR_2;
+
 }
+
+
+void systick_handler()
+{
+	static bool last_state = false;
+	abs_time++;
+}
+
 int main()
 {
-	enable_external_clock(); 
+	enable_external_clock();
 	enable_usb();
+	enable_adc();
 
 	// Enable GPIOC peripheral
 	RCC->AHBENR |= RCC_AHBENR_GPIOBEN_Msk;
@@ -119,13 +126,19 @@ int main()
 	GPIOB->MODER |= (1 << GPIO_MODER_MODER2_Pos);
 	GPIOB->ODR |= GPIO_ODR_2;
 
+	abs_time = 0;
+	// TODO:
+	// This should be set to 24000 by the manual (AHB prescaler is 1/2), but
+	// for wathever reason we need 12000. Maybe clocks are wrong?
+	SysTick->LOAD = 12000 - 1;
+	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 	tusb_init();
 
 	while(true)
 	{
 		tud_task();
 
-		if(tud_cdc_connected())
+		if(tud_cdc_n_connected(0))
 		{
 			uint32_t cnt = 0;
 			if(tud_cdc_available())
