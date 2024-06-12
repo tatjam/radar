@@ -3,6 +3,7 @@
 #include "stm32f0xx.h"
 #include <stdbool.h>
 #include <tusb.h>
+#include "led_control.h"
 
 int64_t abs_time;
 
@@ -101,20 +102,9 @@ static void enable_adc()
 
 }
 
-
-void systick_handler()
+static void enable_led()
 {
-	static bool last_state = false;
-	abs_time++;
-}
-
-int main()
-{
-	enable_external_clock();
-	enable_usb();
-	enable_adc();
-
-	// Enable GPIOC peripheral
+	// Enable GPIOB peripheral
 	RCC->AHBENR |= RCC_AHBENR_GPIOBEN_Msk;
 
 	// Dummy reads, as explained in silicon errata
@@ -124,15 +114,32 @@ int main()
 
 	// Enable PIN 13 for output
 	GPIOB->MODER |= (1 << GPIO_MODER_MODER2_Pos);
-	GPIOB->ODR |= GPIO_ODR_2;
+}
+
+
+void systick_handler()
+{
+	static bool last_state = false;
+	abs_time++;
+
+	led_systick();
+}
+
+int main()
+{
+	enable_external_clock();
+	enable_usb();
+	enable_adc();
+	enable_led();
 
 	abs_time = 0;
-	// TODO:
-	// This should be set to 24000 by the manual (AHB prescaler is 1/2), but
-	// for wathever reason we need 12000. Maybe clocks are wrong?
-	SysTick->LOAD = 12000 - 1;
-	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 	tusb_init();
+
+	// Launch systick
+	// TODO: This should be set to 24000 by the manual (AHB prescaler is 1/2), but
+	// TODO: for wathever reason we need 12000. Maybe clocks are wrong?
+	//SysTick->LOAD = 12000 - 1;
+	//SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 
 	while(true)
 	{
