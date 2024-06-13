@@ -7,9 +7,8 @@ uint16_t waveform[SYNTH_WAVEFORM_N];
 
 void synth_setup()
 {
-	const int step_size = 4095 / SYNTH_WAVEFORM_N;
+	const int step_size = 4096 / SYNTH_WAVEFORM_N;
 	uint16_t val = 0;
-	int cnt = 0;
 	// Setup the waveform to the sane default staircase
 	for(int i = 0; i < SYNTH_WAVEFORM_N; i++)
 	{
@@ -21,7 +20,7 @@ void synth_setup()
 	// Setup and load the prescaler, this makes the clock tick at 24MHz
 	// (Divide 24Mhz by this number)
 	// Must be more than 3 because otherwise DMA cannot keep up
-	TIM6->PSC = 4;
+	TIM6->PSC = 5;
 	// Make sure we auto-reload the preload
 	TIM6->CR1 |= TIM_CR1_ARPE;
 	// We want TRGO to be after the prescaler (ie in update)
@@ -32,17 +31,18 @@ void synth_setup()
 	TIM6->ARR = 40;
 
 	// The freq of the generated signal is thus 24Mhz / PSC / ARR / N_samples
+	// (Approximately, this thing for wathever reason is rough!)
+	// TODO: Check the math, and explain why it doesn't match
 
 	// Point DMA to the DAC (We use 12 bit right aligned), lower 16 bits
 	DMA1_Channel3->CPAR = (uint32_t)(&DAC->DHR12RD);
 	// Point DMA to the buffer
 	DMA1_Channel3->CMAR = (uint32_t)(&waveform);
 	// Make it transfer the whole buffer
-	DMA1_Channel3->CNDTR = SYNTH_WAVEFORM_N / 2; // Divide by two because it's 16 bits
-	// Setup DMA to transfer a byte from waveform to the DAC on each trigger, looping around
+	DMA1_Channel3->CNDTR = SYNTH_WAVEFORM_N / 2; // Divide by two because it's 16 bits (is this true?)
+	// Setup DMA to transfer a byte from waveform to the DAC on each trigger
 	// 16 bit transfer to 16 bit peripheral, memory increment, circular
 	DMA1_Channel3->CCR |= DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_CIRC | DMA_CCR_DIR;
-	// We want to get notified after every sweep is complete, for system timing
 	DMA1_Channel3->CCR |= DMA_CCR_TCIE;
 
 	// Setup the DAC
@@ -54,7 +54,6 @@ void synth_setup()
 
 void synth_interrupt()
 {
-
 }
 
 void synth_start()

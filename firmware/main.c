@@ -115,6 +115,9 @@ static void enable_other_peripherals()
 	// And its related interrupts
 	NVIC_EnableIRQ(TIM6_DAC_IRQn);
 	NVIC_SetPriority(TIM6_DAC_IRQn, 0);
+	NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
+	NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0);
+
 
 	// GPIOA (for DAC), set pin 4 to analog
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN_Msk;
@@ -145,18 +148,20 @@ void systick_handler()
 
 void tim6_dac_handler()
 {
-	// Thist must be TC from DMA channel 3
-	if(DMA1->ISR & DMA_ISR_TCIF3)
-	{
-		synth_interrupt();
-		DMA1->IFCR |= DMA_IFCR_CTCIF3;
-	}
 	if(DAC1->SR & DAC_SR_DMAUDR1)
 	{
 		// We are underrunning! This is an error
-		// (Clear the bit)
-		volatile int a = TIM6->CNT;
 		DAC1->SR = DAC_SR_DMAUDR1;
+	}
+}
+
+void dma_ch_2_3_handler()
+{
+	if(DMA1->ISR & DMA_ISR_TCIF3)
+	{
+		// A whole waveform has been sent out
+		synth_interrupt();
+		DMA1->IFCR |= DMA_IFCR_CTCIF3;
 	}
 }
 
