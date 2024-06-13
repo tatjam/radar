@@ -20,29 +20,28 @@ void synth_setup()
 	// DAC is triggered by TRGO, DMA channel 3 is triggered by DAC at the same time,
 	// Setup and load the prescaler, this makes the clock tick at 24MHz
 	// (Divide 24Mhz by this number)
-	TIM6->PSC = 0;
+	// Must be more than 3 because otherwise DMA cannot keep up
+	TIM6->PSC = 4;
 	// Make sure we auto-reload the preload
 	TIM6->CR1 |= TIM_CR1_ARPE;
 	// We want TRGO to be after the prescaler (ie in update)
 	TIM6->CR2 |= TIM_CR2_MMS_1;
 	// Finally, update will happen every time this counter reaches 0, ie,
-	// this sets the frequency to 24MHz / (this number)
+	// this sets the frequency by dividing by this number
 	// (Note that generated signal frequency is further divided by N samples)
-	// Thus we have a DAC trigger freq from 24Mhz to 366Hz
-	// and assuming 128 samples, output freq from 187.5kHz to near 0Hz
-	// Default makes it be a 5.2kHz signal
-	TIM6->ARR = 36;
-	// TIM6->ARR = 1000;
+	TIM6->ARR = 40;
+
+	// The freq of the generated signal is thus 24Mhz / PSC / ARR / N_samples
 
 	// Point DMA to the DAC (We use 12 bit right aligned), lower 16 bits
 	DMA1_Channel3->CPAR = (uint32_t)(&DAC->DHR12RD);
 	// Point DMA to the buffer
 	DMA1_Channel3->CMAR = (uint32_t)(&waveform);
 	// Make it transfer the whole buffer
-	DMA1_Channel3->CNDTR = SYNTH_WAVEFORM_N;
+	DMA1_Channel3->CNDTR = SYNTH_WAVEFORM_N / 2; // Divide by two because it's 16 bits
 	// Setup DMA to transfer a byte from waveform to the DAC on each trigger, looping around
 	// 16 bit transfer to 16 bit peripheral, memory increment, circular
-	DMA1_Channel3->CCR |= DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_CIRC;
+	DMA1_Channel3->CCR |= DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_CIRC | DMA_CCR_DIR;
 	// We want to get notified after every sweep is complete, for system timing
 	DMA1_Channel3->CCR |= DMA_CCR_TCIE;
 

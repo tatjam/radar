@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-#define SYNTH_WAVEFORM_N 16
+#define SYNTH_WAVEFORM_N 128
 
 extern uint16_t waveform[SYNTH_WAVEFORM_N];
 
