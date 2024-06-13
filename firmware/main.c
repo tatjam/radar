@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <tusb.h>
 #include "led_control.h"
+#include "synthesizer.h"
 
 int64_t abs_time;
 
@@ -64,6 +65,8 @@ static void enable_external_clock()
 	// Set USB to use the PLL
 	RCC->CFGR3 |= RCC_CFGR3_USBSW_PLLCLK;
 
+	// APB runs at AHB by default, so 24MHz
+
 	enable_debug_mco();
 }
 
@@ -97,8 +100,25 @@ static void enable_usb()
 	USB->CNTR &= ~USB_CNTR_FRES;
 }
 
-static void enable_adc()
+static void enable_other_peripherals()
 {
+	// DMA
+	RCC->AHBENR |= RCC_AHBENR_DMAEN;
+	// DAC
+	RCC->APB1RSTR |= RCC_APB1RSTR_DACRST;
+	RCC->APB1RSTR &= ~RCC_APB1RSTR_DACRST;
+	RCC->APB1ENR |= RCC_APB1ENR_DACEN;
+	// ADC
+	RCC->APB2ENR |= RCC_APB2ENR_ADCEN;
+	// TIM6 (to trigger DAC and DMA)
+	RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
+	// And its related interrupts
+	NVIC_EnableIRQ(TIM6_DAC_IRQn);
+	NVIC_SetPriority(TIM6_DAC_IRQn, 0);
+
+	// GPIOA (for DAC), set pin 4 to analog
+	RCC->AHBENR |= RCC_AHBENR_GPIOAEN_Msk;
+	GPIOA->MODER |= GPIO_MODER_MODER4_Msk;
 
 }
 
@@ -119,18 +139,35 @@ static void enable_led()
 
 void systick_handler()
 {
-	static bool last_state = false;
 	abs_time++;
-
 	led_systick();
+}
+
+void tim6_dac_handler()
+{
+	// Thist must be TC from DMA channel 3
+	if(DMA1->ISR & DMA_ISR_TCIF3)
+	{
+		synth_interrupt();
+		DMA1->IFCR |= DMA_IFCR_CTCIF3;
+	}
+	if(DAC1->SR & DAC_SR_DMAUDR1)
+	{
+		// We are underrunning! This is an error
+		// (Clear the bit)
+		volatile int a = TIM6->CNT;
+		DAC1->SR = DAC_SR_DMAUDR1;
+	}
 }
 
 int main()
 {
+	DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;
 	enable_external_clock();
 	enable_usb();
-	enable_adc();
+	enable_other_peripherals();
 	enable_led();
+	synth_setup();
 
 	abs_time = 0;
 	tusb_init();
@@ -140,6 +177,14 @@ int main()
 	// TODO: for wathever reason we need 12000. Maybe clocks are wrong?
 	SysTick->LOAD = 12000 - 1;
 	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
+
+	// Sane reset status
+
+	// Reset op-amps to minimum gain
+
+	// TODO: May not be a good idea to start synthesizer by default, to prevent radio "jamming" accidentally
+	// Launch synthesizer
+	synth_start();
 
 	while(true)
 	{
@@ -156,6 +201,7 @@ int main()
 				tud_cdc_write_flush();
 			}
 		}
+
 	}
 
 }

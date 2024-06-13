@@ -1,4 +1,4 @@
-files := startup.c main.c utils.c mem.c usb_callbacks.c usb_descriptors.c led_control.c
+files := startup.c main.c utils.c mem.c usb_callbacks.c usb_descriptors.c led_control.c synthesizer.c
 usbfiles := $(shell find tinyusb/src/ -name '*.c')
 
 flash.elf: build/ $(files) $(usbfiles)

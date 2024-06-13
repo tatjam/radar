@@ -11,7 +11,7 @@ void led_systick()
 	{
 		// Toggle LED
 		GPIOB->ODR ^= GPIO_ODR_2;
-		if(tud_connected())
+		if(tud_mounted())
 		{
 			// Flash every 3 seconds once USB is connected
 			led_timer = 3000;
@@ -22,7 +22,4 @@ void led_systick()
 			led_timer = 500;
 		}
 	}
-
-
-
 }
