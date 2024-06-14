@@ -3,10 +3,12 @@
 #include "stm32f0xx.h"
 #include <stdbool.h>
 #include <tusb.h>
+#include <utils.h>
+
 #include "led_control.h"
 #include "synthesizer.h"
+#include "opamp_control.h"
 
-int64_t abs_time;
 
 static void enable_debug_mco()
 {
@@ -119,9 +121,16 @@ static void enable_other_peripherals()
 	NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0);
 
 
-	// GPIOA (for DAC), set pin 4 to analog
+	// GPIOA (for DAC, and opamps), set pin 4 to analog
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN_Msk;
+	// Dummy reads, as explained in silicon errata
+	volatile uint32_t dummy;
+	dummy = RCC->AHBENR;
+	dummy = RCC->AHBENR;
 	GPIOA->MODER |= GPIO_MODER_MODER4_Msk;
+
+	// Set pins 6, 7 and 9 for output (opamps)
+	GPIOA->MODER |= (1 << GPIO_MODER_MODER6_Pos) | (1 << GPIO_MODER_MODER7_Pos) | (1 << GPIO_MODER_MODER9_Pos);
 
 }
 
@@ -135,7 +144,7 @@ static void enable_led()
 	dummy = RCC->AHBENR;
 	dummy = RCC->AHBENR;
 
-	// Enable PIN 13 for output
+	// Enable PIN 2 for output
 	GPIOB->MODER |= (1 << GPIO_MODER_MODER2_Pos);
 }
 
@@ -167,12 +176,13 @@ void dma_ch_2_3_handler()
 
 int main()
 {
-	DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;
 	enable_external_clock();
+	enable_led();
+	DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;
 	enable_usb();
 	enable_other_peripherals();
-	enable_led();
 	synth_setup();
+	opamp_setup();
 
 	abs_time = 0;
 	tusb_init();
@@ -186,6 +196,7 @@ int main()
 	// Sane reset status
 
 	// Reset op-amps to minimum gain
+	opamp_control(-100, OPAMP_BOTH);
 
 	// TODO: May not be a good idea to start synthesizer by default, to prevent radio "jamming" accidentally
 	// Launch synthesizer

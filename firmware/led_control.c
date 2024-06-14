@@ -1,4 +1,7 @@
 #include "led_control.h"
+
+#include <opamp_control.h>
+
 #include "stm32f0xx.h"
 #include <tusb.h>
 
