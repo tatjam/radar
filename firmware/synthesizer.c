@@ -39,10 +39,10 @@ void synth_setup()
 	// Point DMA to the buffer
 	DMA1_Channel3->CMAR = (uint32_t)(&waveform);
 	// Make it transfer the whole buffer
-	DMA1_Channel3->CNDTR = SYNTH_WAVEFORM_N / 2; // Divide by two because it's 16 bits (is this true?)
+	DMA1_Channel3->CNDTR = SYNTH_WAVEFORM_N; // NUMBER of transfers, not bytes
 	// Setup DMA to transfer a byte from waveform to the DAC on each trigger
 	// 16 bit transfer to 16 bit peripheral, memory increment, circular
-	DMA1_Channel3->CCR |= DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_CIRC | DMA_CCR_DIR;
+	DMA1_Channel3->CCR |= DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_MINC | DMA_CCR_CIRC | DMA_CCR_DIR;
 	DMA1_Channel3->CCR |= DMA_CCR_TCIE;
 
 	// Setup the DAC

@@ -1,3 +1,4 @@
+#include <adc.h>
 #include <stdint.h>
 #include "class/cdc/cdc_device.h"
 #include "stm32f0xx.h"
@@ -107,11 +108,11 @@ static void enable_other_peripherals()
 	// DMA
 	RCC->AHBENR |= RCC_AHBENR_DMAEN;
 	// DAC
+	// TODO: Restart may not be needed
 	RCC->APB1RSTR |= RCC_APB1RSTR_DACRST;
 	RCC->APB1RSTR &= ~RCC_APB1RSTR_DACRST;
 	RCC->APB1ENR |= RCC_APB1ENR_DACEN;
-	// ADC
-	RCC->APB2ENR |= RCC_APB2ENR_ADCEN;
+
 	// TIM6 (to trigger DAC and DMA)
 	RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
 	// And its related interrupts
@@ -183,6 +184,7 @@ int main()
 	enable_other_peripherals();
 	synth_setup();
 	opamp_setup();
+	adc_setup();
 
 	abs_time = 0;
 	tusb_init();
