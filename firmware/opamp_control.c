@@ -6,16 +6,23 @@
 // so no explicit delays needed
 void opamp_control(int steps, int choice)
 {
-	if(steps > 0)
+	if(steps < 0)
 	{
-		// Bring U/D to high state, and then bring down CS
+		// Bring U/D to high state, and then bring down CS, any
+		// further rising edge will cause a decrease in resistance
+		// (wiper moving up, towards the contact, putting less resistors in the path)
 		GPIOA->ODR |= GPIO_ODR_9; // U/D high
 	}
-	else if(steps < 0)
+	else if(steps > 0)
 	{
 		// Bring U/D to low state, and then bring down CS
-		// Any further rising edge of U/D will cause a decrease
-		GPIOA->ODR &= ~GPIO_ODR_9; // U/D high
+		// Any further rising edge of U/D will cause a increase in resistance
+		// (wiper moving down, away from the contact, putting more resistors in the path)
+		GPIOA->ODR &= ~GPIO_ODR_9; // U/D low
+	}
+	else
+	{
+		return;
 	}
 
 	// Bring down CS

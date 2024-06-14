@@ -6,7 +6,7 @@
 #define OPAMP_BOTH 2
 // Shared U/D line, CS is not shared
 
-// Positive steps increase, negative decrease
+// Positive steps increase gain, negative decrease gain
 void opamp_control(int steps, int select);
 
 
