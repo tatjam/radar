@@ -1,4 +1,4 @@
 #pragma once
 
-
-void encode_and_send();
+void usb_datadump_task();
+void usb_datadump_preinit();

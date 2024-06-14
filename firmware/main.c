@@ -4,6 +4,7 @@
 #include "stm32f0xx.h"
 #include <stdbool.h>
 #include <tusb.h>
+#include <usb_datadump.h>
 #include <utils.h>
 
 #include "led_control.h"
@@ -153,7 +154,6 @@ static void enable_led()
 void systick_handler()
 {
 	abs_time++;
-	led_systick();
 }
 
 void tim6_dac_handler()
@@ -187,6 +187,7 @@ int main()
 	adc_setup();
 
 	abs_time = 0;
+	usb_datadump_preinit();
 	tusb_init();
 
 	// Launch systick
@@ -207,19 +208,7 @@ int main()
 	while(true)
 	{
 		tud_task();
-
-		if(tud_cdc_n_connected(0))
-		{
-			uint32_t cnt = 0;
-			if(tud_cdc_available())
-			{
-				uint8_t buf[64];
-				cnt = tud_cdc_read(buf, sizeof(buf));
-				tud_cdc_write(buf, 1);
-				tud_cdc_write_flush();
-			}
-		}
-
+		usb_datadump_task();
+		led_task();
 	}
-
 }

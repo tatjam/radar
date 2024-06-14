@@ -1,3 +1,3 @@
 #include "utils.h"
 
-uint64_t abs_time;
+uint32_t abs_time;

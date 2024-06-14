@@ -4,12 +4,17 @@
 
 #include "stm32f0xx.h"
 #include <tusb.h>
+#include <utils.h>
 
 static int led_timer = 0;
+static uint32_t last_abstime = 0;
 
-void led_systick()
+void led_task()
 {
-	led_timer--;
+	const int dt = abs_time - last_abstime;
+	last_abstime = abs_time;
+	led_timer -= dt;
+
 	if(led_timer < 0)
 	{
 		// Toggle LED
