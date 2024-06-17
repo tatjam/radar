@@ -1,6 +1,7 @@
 #include <adc.h>
 #include <stdint.h>
 #include "class/cdc/cdc_device.h"
+#include "stm32f072xb.h"
 #include "stm32f0xx.h"
 #include <stdbool.h>
 #include <tusb.h>
@@ -114,11 +115,16 @@ static void enable_other_peripherals()
 	RCC->APB1RSTR &= ~RCC_APB1RSTR_DACRST;
 	RCC->APB1ENR |= RCC_APB1ENR_DACEN;
 
+	// ADC
+	RCC->APB2ENR |= RCC_APB2ENR_ADCEN;
+
 	// TIM6 (to trigger DAC and DMA)
 	RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
 	// And its related interrupts
 	NVIC_EnableIRQ(TIM6_DAC_IRQn);
 	NVIC_SetPriority(TIM6_DAC_IRQn, 0);
+	NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+	NVIC_SetPriority(DMA1_Channel1_IRQn, 0);
 	NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 	NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0);
 
@@ -165,6 +171,20 @@ void tim6_dac_handler()
 	}
 }
 
+void dma_ch_1_handler()
+{
+	if(DMA1->ISR & DMA_ISR_HTIF1)
+	{
+		adc_interrupt(true);
+		DMA1->IFCR |= DMA_IFCR_CHTIF1;
+	}
+	else if(DMA1->ISR & DMA_ISR_TCIF1)
+	{
+		adc_interrupt(false);
+		DMA1->IFCR |= DMA_IFCR_CTCIF1;
+	}
+} 
+
 void dma_ch_2_3_handler()
 {
 	if(DMA1->ISR & DMA_ISR_TCIF3)
@@ -204,6 +224,9 @@ int main()
 	// TODO: May not be a good idea to start synthesizer by default, to prevent radio "jamming" accidentally
 	// Launch synthesizer
 	synth_start();
+	adc_start();
+
+	//opamp_control(100, OPAMP_BOTH);
 
 	while(true)
 	{

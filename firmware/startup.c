@@ -12,6 +12,7 @@ void nmi_handler();
 void usb_handler();
 void systick_handler();
 void tim6_dac_handler();
+void dma_ch_1_handler();
 void dma_ch_2_3_handler();
 
 uint32_t isr_vector[48] __attribute__((section(".isr_vector"))) = 
@@ -34,14 +35,13 @@ uint32_t isr_vector[48] __attribute__((section(".isr_vector"))) =
 	// SysTick
 	(uint32_t)&systick_handler,
 	// Interrupt 0 starts here (substract 16 to get position)
-	0, 0, 0, 0, 0, 
-	0, 0, 0, 0, 
-	0,
-	(uint32_t)&dma_ch_2_3_handler, 0, 0, 0, 0,
-	0, 0,
-	(uint32_t)&tim6_dac_handler, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
+	(uint32_t)&dma_ch_1_handler,
+	(uint32_t)&dma_ch_2_3_handler,
 	0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, (uint32_t)&usb_handler
+	(uint32_t)&tim6_dac_handler,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	(uint32_t)&usb_handler
 };
 
 

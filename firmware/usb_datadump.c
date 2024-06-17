@@ -1,4 +1,5 @@
 #include "usb_datadump.h"
+#include "adc.h"
 #include <tusb.h>
 
 uint32_t samp_freq;
@@ -8,8 +9,34 @@ uint8_t clk_valid;
 audio_control_range_4_n_t(1) samp_freq_range;
 audio_control_range_2_n_t(1) vol_range;
 
+bool datadump_task_block = false;
+
 void usb_datadump_task()
 {
+	// This is critical: if one is already running, just ignore the repeated interrupt
+	if(datadump_task_block)
+	{
+		return;
+	}
+
+	datadump_task_block = true;
+
+	if(buffer_status == 1)
+	{
+		// First half ready
+		tud_audio_write(adc_buffer, ADC_DATABUFFER / 2);
+	}
+	else if (buffer_status == 2)
+	{
+		// Second half ready
+		tud_audio_write(adc_buffer + ADC_DATABUFFER / 2, ADC_DATABUFFER / 2);
+	}
+
+	// "Free" the block
+	datadump_task_block = false;
+
+	// Wait until next interrupt to keep processing
+	buffer_status = 0;
 
 }
 
