@@ -5,6 +5,7 @@
 #include "stm32f0xx.h"
 #include <stdbool.h>
 #include <tusb.h>
+#include <usb_control.h>
 #include <usb_datadump.h>
 #include <utils.h>
 
@@ -210,6 +211,9 @@ int main()
 	usb_datadump_preinit();
 	tusb_init();
 
+	usb_control_init();
+
+
 	// Launch systick
 	// TODO: This should be set to 24000 by the manual (AHB prescaler is 1/2), but
 	// TODO: for wathever reason we need 12000. Maybe clocks are wrong?
@@ -226,12 +230,11 @@ int main()
 	synth_start();
 	adc_start();
 
-	//opamp_control(100, OPAMP_BOTH);
-
 	while(true)
 	{
 		tud_task();
 		usb_datadump_task();
+		usb_control_task();
 		led_task();
 	}
 }
