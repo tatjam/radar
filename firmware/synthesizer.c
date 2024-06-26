@@ -49,11 +49,21 @@ void synth_setup()
 	// Make it trigger the DMA and be triggered by triggers (TIM6)
 	DAC1->CR |= DAC_CR_DMAUDRIE1 | DAC_CR_DMAEN1 | DAC_CR_TEN1;
 
-
+	// SHDN pin of the VCO set to output
+	GPIOB->MODER |= (1 << GPIO_MODER_MODER4_Pos);
+	vco_set_running(false);
 }
 
 void synth_interrupt()
 {
+}
+
+void vco_set_running(bool value)
+{
+	if(value)
+		GPIOB->ODR |= GPIO_ODR_4;
+	else
+		GPIOB->ODR &= ~GPIO_ODR_4;
 }
 
 void synth_start()
@@ -65,7 +75,5 @@ void synth_start()
 	DMA1_Channel3->CCR |= DMA_CCR_EN;
 	// Start the DAC
 	DAC1->CR |= DAC_CR_EN1;
-
-	DAC1->DHR12R1 = 1000;
 
 }
